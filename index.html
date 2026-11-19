@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="am"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SiDE AI</title>
+<style>
+:root{--bg:#f5f8f6;--card:#fff;--t:#14281f;--m:#56685f;--b:#d3e0d8;--g:#1b5e3b;--gt:#fff;--me:#d9f2e3;--r:#b42318}
+@media (prefers-color-scheme:dark){:root{--bg:#0f1713;--card:#18231d;--t:#e8f2ec;--m:#a3b5ab;--b:#2c3b33;--g:#4fb37e;--gt:#06170e;--me:#17402a;--r:#ff8a80}}
+*{box-sizing:border-box;margin:0;padding:0}html,body{height:100%}
+body{background:var(--bg);color:var(--t);font-family:system-ui,sans-serif;line-height:1.55;display:flex;flex-direction:column}
+header{display:flex;gap:8px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--b)}header b{flex:1;color:var(--g);font-size:18px}
+button{font:inherit;cursor:pointer;border:0;border-radius:10px;min-height:44px;padding:0 14px;background:var(--g);color:var(--gt)}
+button.s{background:var(--card);color:var(--t);border:1px solid var(--b)}
+.v{display:none;flex:1;min-height:0;flex-direction:column}.v.on{display:flex}
+#msgs{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.m{max-width:88%;padding:10px 12px;border-radius:14px;white-space:pre-wrap;word-wrap:break-word;background:var(--card);border:1px solid var(--b)}.m.me{align-self:flex-end;background:var(--me)}
+.meta{font-size:12px;color:var(--m);margin-top:4px}
+#bar{display:flex;gap:8px;padding:10px 14px;border-top:1px solid var(--b)}
+textarea,input,select{width:100%;font:inherit;color:var(--t);background:var(--card);border:1px solid var(--b);border-radius:10px;padding:10px}
+.pad{padding:14px;overflow-y:auto}.card{background:var(--card);border:1px solid var(--b);border-radius:14px;padding:12px;margin:10px 0}
+label{display:block;font-size:13px;color:var(--m);margin-top:8px}.note{font-size:12px;color:var(--m)}.err{color:var(--r);font-size:13px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.chk{display:flex;gap:8px;align-items:center;color:var(--t)}.chk input{width:auto}
+</style></head><body>
+<header><b>SiDE AI</b><button class="s" id="bNew">＋ አዲስ</button><button class="s" id="bAdm">⚙️ Admin</button></header>
+<section class="v on" id="vChat"><div id="msgs" aria-live="polite"><div class="m">ሰላም! ማንኛውንም ነገር ጠይቀኝ። ሲዳምኛ ገና በሙከራ ላይ ነው፤ ከተረጋገጠ መዝገብ ካልተገኘ እርግጠኛ አይደለሁም እላለሁ።</div></div>
+<div id="bar"><textarea id="inp" rows="2" placeholder="ጻፍ…" aria-label="መልዕክት"></textarea><button id="send">↑</button></div></section>
+<section class="v" id="vAdm"><div class="pad">
+<div class="row"><button class="s" id="bBack">← ወደ Chat</button></div>
+<div class="card"><label>የባለቤት የይለፍ ቃል<input id="pw" type="password" autocomplete="current-password"></label><div class="row"><button id="bLoad">ግባ / አድስ</button></div><p class="err" id="aErr" role="alert"></p></div>
+<div id="aForm" hidden><div class="card">
+<label>ዓይነት<select id="aT"><option value="word">ቃል</option><option value="sentence">ዓረፍተ ነገር</option></select></label>
+<label>ሲዳምኛ *<textarea id="aS" rows="2"></textarea></label><label>አማርኛ<textarea id="aA" rows="2"></textarea></label><label>English<textarea id="aE" rows="2"></textarea></label>
+<label class="chk"><input type="checkbox" id="aV" checked><span>በአዋቂ ተረጋግጧል</span></label><div class="row"><button id="aAdd">💾 መዝግብ</button></div></div>
+<p class="note" id="aCnt"></p><div id="aList"></div></div></div></section>
+<script>
+var $=function(i){return document.getElementById(i)},hist=[],busy=false,armed=null,items=[];
+function esc(s){return String(s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function add(role,t,meta){var d=document.createElement('div');d.className='m'+(role==='user'?' me':'');d.textContent=t;if(meta){var m=document.createElement('div');m.className='meta';m.textContent=meta;d.appendChild(m)}$('msgs').appendChild(d);$('msgs').scrollTop=1e9;return d}
+async function send(){var q=$('inp').value.trim();if(!q||busy)return;busy=true;$('inp').value='';add('user',q);hist.push({role:'user',content:q});var o=add('assistant','…');
+ try{var r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:hist})});var j=await r.json();
+  if(!r.ok)throw new Error(j.error||'error');o.textContent=j.text;var m=document.createElement('div');m.className='meta';m.textContent=j.used?'📚 ከ'+j.used+' የሲዳምኛ መዝገቦች ተጠቅሟል':'ከሲዳምኛ መዝገብ ምንም አልተገኘም';o.appendChild(m);hist.push({role:'assistant',content:j.text})}
+ catch(e){hist.pop();o.textContent='ስህተት ተፈጠረ ('+e.message+')። እንደገና ሞክር።'}busy=false}
+$('send').onclick=send;$('inp').addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send()}});
+$('bNew').onclick=function(){hist=[];$('msgs').innerHTML='';add('assistant','አዲስ ውይይት። ምን ልርዳህ?')};
+function show(a){$('vChat').classList.toggle('on',!a);$('vAdm').classList.toggle('on',a)}$('bAdm').onclick=function(){show(true)};$('bBack').onclick=function(){show(false)};
+function H(){return{'Content-Type':'application/json','x-admin-password':$('pw').value}}
+async function load(){$('aErr').textContent='';try{var r=await fetch('/api/admin',{headers:H()});var j=await r.json();if(r.status===401){$('aErr').textContent='የይለፍ ቃል ትክክል አይደለም።';$('aForm').hidden=true;return}if(!r.ok)throw 0;items=j.items;$('aForm').hidden=false;draw()}catch(e){$('aErr').textContent='መገናኘት አልተቻለም (Redis መገናኘቱን አረጋግጥ)።'}}
+function draw(){$('aCnt').textContent='መዝገቦች: '+items.length+' · የተረጋገጡ: '+items.filter(function(e){return e.verified}).length;$('aList').innerHTML=items.map(function(e){return'<div class="card"><b>'+esc(e.sidaamu)+'</b><div>'+esc(e.amharic)+'</div><div>'+esc(e.english)+'</div><div class="row"><button class="s" data-i="'+e.id+'">'+(armed===e.id?'እርግጠኛ ነህ? ሰርዝ':'🗑 ሰርዝ')+'</button></div></div>'}).join('')}
+$('bLoad').onclick=load;
+$('aList').addEventListener('click',async function(ev){var b=ev.target.closest('button');if(!b)return;var id=b.dataset.i;if(armed!==id){armed=id;draw();return}armed=null;await fetch('/api/admin?id='+encodeURIComponent(id),{method:'DELETE',headers:H()});load()});
+$('aAdd').onclick=async function(){var s=$('aS').value.trim(),a=$('aA').value.trim(),e=$('aE').value.trim();if(!s||(!a&&!e)){$('aErr').textContent='ሲዳምኛ እና ቢያንስ አንድ ትርጉም ያስፈልጋል።';return}
+ var r=await fetch('/api/admin',{method:'POST',headers:H(),body:JSON.stringify({type:$('aT').value,sidaamu:s,amharic:a,english:e,verified:$('aV').checked})});
+ if(r.ok){$('aS').value=$('aA').value=$('aE').value='';load()}else $('aErr').textContent='መመዝገብ አልተቻለም።'};
+</script></body></html>
